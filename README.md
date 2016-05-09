@@ -1,7 +1,7 @@
 # Trivium
 A Verilog implementation of the Trivium stream cipher
 
-0. Overview
+# 0. Overview
     0. Overview
     1. General Information
     2. Current Status
@@ -11,7 +11,7 @@ A Verilog implementation of the Trivium stream cipher
     6. References
 	
 
-1. General Information
+# 1. General Information
     + This Verilog implementation of the Trivium stream cipher consists of:
         - The core components
         - A testbench that tests the top level functionality
@@ -22,12 +22,12 @@ A Verilog implementation of the Trivium stream cipher
     + Test vectors and the python reference implementation can be found in the reference_implementation/ directory
     + The specification of Trivium can be found in [1]
 	
-2. Current Status
+# 2. Current Status
     The core has successfully been synthesized, placed and routed in a design. In addition, the test coverage of
     the behavioral simulation is complete, with the core passing all tests.
     A next step is verify the functionality of the core in silicon as part of a larger FPGA design.
     
-3. Synthesizing and Testing The Core
+# 3. Synthesizing and Testing The Core
     + Synthesis
         - The core requires no special constraints to function
         - All necessary code can be found in the hdl/src directory
@@ -42,12 +42,12 @@ A Verilog implementation of the Trivium stream cipher
           are using Xilinx tools (Xilinx ISE in particular)
         - The testbench is self checking and will abort with a success message if all tests pass
 		
-4. TODOs
+# 4. TODOs
     + Add interrupt functionality
 
-5. License
+# 5. License
     This project is licensed under the MIT License. Please see license.txt in the top level project directory
     for more details.
 
-6. References
+# 6. References
     + [1] http://www.ecrypt.eu.org/stream/p3ciphers/trivium/trivium_p3.pdf
