@@ -46,8 +46,8 @@ A Verilog implementation of the Trivium stream cipher
     + Add interrupt functionality
 
 5. License
-    This project is licensed under the MIT License. Please see license.txt in the top level project directory
-    for more details.
+    This project is licensed under the Lesser General Public License (LGPL). See the lincense.txt file in the top
+    level project directory for more info.
 
 6. References
     + [1] http://www.ecrypt.eu.org/stream/p3ciphers/trivium/trivium_p3.pdf
