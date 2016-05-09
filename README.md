@@ -45,7 +45,7 @@ A Verilog implementation of the Trivium stream cipher
 # 4. TODOs
     + Add interrupt functionality
 
-5. License
+# 5. License
     This project is licensed under the Lesser General Public License (LGPL). See the lincense.txt file in the top
     level project directory for more info.
 
