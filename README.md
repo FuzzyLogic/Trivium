@@ -16,22 +16,23 @@ A Verilog implementation of the Trivium stream cipher
         - The core components
         - A testbench that tests the top level functionality
         - A Python reference implementation for the generation of test vectors and possibly other scenarios
-    + The interface of the core is designed such that it is compatible with PLB-based processor systems,
-      such as the Xilinx MicroBlaze
+        - Currently a single bare-metal test for the Zynq
+    + The interface of the core conforms to the AXI4LITE bus protocol
     + The hdl/src directory contains the source code of the core, whereas the testbench can be found in hdl/tb
+    + The AXI-related code is located in hdl/ip and can be used to create and package the core
     + Test vectors and the python reference implementation can be found in the reference_implementation/ directory
     + The specification of Trivium can be found in [1]
 	
 # 2. Current Status
     The core has successfully been synthesized, placed and routed in a design. In addition, the test coverage of
-    the behavioral simulation is complete, with the core passing all tests.
-    A next step is verify the functionality of the core in silicon as part of a larger FPGA design.
+    the behavioral simulation is complete, with the core passing all tests. In addition, the core was packaged
+    as an AXI IP core and tested in a simple Zynq design. A few bare-metal tests were written which interface
+    the core from one of the Cortex A9 cores in the PS. All tests execute successfully.
     
 # 3. Synthesizing and Testing The Core
     + Synthesis
         - The core requires no special constraints to function
         - All necessary code can be found in the hdl/src directory
-        - Make sure that the file hdl/src/trivium_globals.v is included in any design that uses this core
     + Testing
         - The testbench for the behavioral simulation can be found in hdl/tb
         - Running the test requires two files that contain the test vectors
@@ -39,11 +40,15 @@ A Verilog implementation of the Trivium stream cipher
         - The test vectors consist of randomly generated input (trivium_ref_in.txt) and corresponding encrypted
           outputs (trivisum_ref_out.txt)
         - Be sure to copy these test vector files to the directory of the project that runs the testbench if you
-          are using Xilinx tools (Xilinx ISE in particular)
+          are using Xilinx ISE or include them in the project in case of Vivado
         - The testbench is self checking and will abort with a success message if all tests pass
+        - Create a simple Zynq design with a single Zynq 7 Processing System core and use the bare-metal 
+          test code found in sw/basic_test
 		
 # 4. TODOs
     + Add interrupt functionality
+    + The output ready flag in the configuration register is currently not supported yet
+    + Add support for Linux integration via device driver (and possibly modifications to the device tree)
 
 # 5. License
     This project is licensed under the Lesser General Public License (LGPL). See the lincense.txt file in the top
