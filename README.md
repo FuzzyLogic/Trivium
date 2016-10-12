@@ -46,9 +46,8 @@ A Verilog implementation of the Trivium stream cipher
           test code found in sw/basic_test
 		
 # 4. TODOs
-    + Add interrupt functionality
-    + The output ready flag in the configuration register is currently not supported yet
     + Add support for Linux integration via device driver (and possibly modifications to the device tree)
+    + Add Linux user-space tests
 
 # 5. License
     This project is licensed under the Lesser General Public License (LGPL). See the lincense.txt file in the top
