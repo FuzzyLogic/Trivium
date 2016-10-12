@@ -47,10 +47,10 @@ int encrypt_word(Xuint32 *p_pt, Xuint32 *p_ct) {
     /* Write plaintext to core */
     REG_WR(REG_DAT_I, *p_pt);
 
-    /* Start computation and wait until completed */
+    /* Start computation and wait until output valid */
     REG_SET(REG_CONFIG, BIT_PROC);
     while (1 == REG_GET(REG_CONFIG, BIT_READY));
-    while (0 == REG_GET(REG_CONFIG, BIT_READY));
+    while (0 == REG_GET(REG_CONFIG, BIT_OVAL));
 
     /* Read result into output buffer */
     *p_ct = REG_RD(REG_DAT_O);

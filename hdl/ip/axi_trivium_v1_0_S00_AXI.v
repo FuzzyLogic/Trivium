@@ -14,7 +14,7 @@
 //                   Register map (All values are interpreted as little-endian):
 //                      +0:      Control register (RW)
 //                         -0.0: UNUSED | ... | UNUSED | Process (RWS) | Stop (RWS)| Init (RWS) 
-//                         -0.1: UNUSED | ... | UNUSED | Ready (R) | Output available (R)
+//                         -0.1: UNUSED | ... | UNUSED | Ready (R) | Output valid (R)
 //                         -0.2: UNUSED | ... | UNUSED
 //                         -0.3: UNUSED | ... | UNUSED
 //                      +1 to 3: Key register (Least significant bytes at bottom of 1, RW)
@@ -35,9 +35,9 @@
 module axi_trivium_v1_0_S00_AXI #
 (
     /* Width of S_AXI data bus */
-    parameter integer C_S_AXI_DATA_WIDTH	= 32,
+    parameter integer C_S_AXI_DATA_WIDTH    = 32,
     /* Width of S_AXI address bus */
-    parameter integer C_S_AXI_ADDR_WIDTH	= 6
+    parameter integer C_S_AXI_ADDR_WIDTH    = 6
 )
 (
     /* Global Clock Signal */
@@ -166,7 +166,8 @@ reg    [2:0]                       ld_sel_a_r;      /* Register a slice selectio
 reg    [2:0]                       ld_sel_b_r;      /* Register b slice selection */
 reg                                init_r;          /* Init cipher */
 reg                                stop_r;          /* Stop any calculations and reset the core */
-reg                                proc_r;          /* Start processing */                        
+reg                                proc_r;          /* Start processing */                    
+reg                                gen_output_r;    /* Register stating whether output is being computed */    
 wire                               busy_s;          /* Flag indicating whether core is busy */  
 wire                               slv_reg_rden_r;  /* Signal that triggers the output of data */
 wire                               slv_reg_wren_r;  /* Signal that triggers the capture of input data */
@@ -184,7 +185,7 @@ assign S_AXI_ARREADY    = axi_arready;
 assign S_AXI_RDATA      = axi_rdata;
 assign S_AXI_RRESP      = axi_rresp;
 assign S_AXI_RVALID     = axi_rvalid;
-	
+    
 //////////////////////////////////////////////////////////////////////////////////
 // Module instantiations
 //////////////////////////////////////////////////////////////////////////////////
@@ -291,6 +292,7 @@ always @(posedge S_AXI_ACLK) begin
         init_r <= 0;
         stop_r <= 0;
         proc_r <= 0;
+        gen_output_r <= 0;
         ld_dat_r <= 0;
         ld_sel_a_r <= 0;
         ld_sel_b_r <= 0;
@@ -301,12 +303,18 @@ always @(posedge S_AXI_ACLK) begin
                 4'h0:       /* Configuration register */
                     /* Currently only byte 0 of configuration register is writable */
                     if (S_AXI_WSTRB[0] == 1'b1) begin
-                        if (S_AXI_WDATA[1] == 1'b1)                 /* Bit 1 resets core in any case */
+                        if (S_AXI_WDATA[1] == 1'b1) begin                   /* Bit 1 resets core in any case */
                             stop_r <= 1'b1;
-                        else if (S_AXI_WDATA[0] == 1'b1 & !busy_s)  /* Bit 0 triggers init if core is not busy */
+                            gen_output_r <= 0;
+                        end
+                        else if (S_AXI_WDATA[0] == 1'b1 & !busy_s) begin    /* Bit 0 triggers init if core is not busy */
                             init_r <= 1'b1;
-                        else if (S_AXI_WDATA[2] == 1'b1 & !busy_s)  /* Bit 2 triggers processing if core is not busy */
-                        proc_r <= 1'b1;
+                            gen_output_r <= 0;
+                        end
+                        else if (S_AXI_WDATA[2] == 1'b1 & !busy_s) begin    /* Bit 2 triggers processing if core is not busy */
+                            proc_r <= 1'b1;
+                            gen_output_r <= 1'b1;
+                        end
                     end
                 4'h1: begin /* LO key register */
                     /* Reconstruct key LO value written so far */
@@ -496,10 +504,10 @@ end
 * and the slave is ready to accept the read address.
 */
 assign slv_reg_rden_r = axi_arready & S_AXI_ARVALID & ~axi_rvalid;
-always @(*)	begin
+always @(*) begin
     /* Address decoding for reading registers */
     case (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB])
-        4'h0:       reg_data_out <= {16'h0000, 6'b000000, ~busy_s, 1'b0, 8'h00};
+        4'h0:       reg_data_out <= {16'h0000, 6'b000000, ~busy_s, gen_output_r & ~busy_s, 8'h00};
         4'h1:       reg_data_out <= reg_key_lo_r;
         4'h2:       reg_data_out <= reg_key_mid_r;
         4'h3:       reg_data_out <= reg_key_hi_r;
