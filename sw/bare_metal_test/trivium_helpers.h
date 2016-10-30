@@ -21,8 +21,9 @@
 #define BIT_INIT    0
 #define BIT_STOP    1
 #define BIT_PROC    2
-#define BIT_OVAL    8
-#define BIT_READY   9
+#define BIT_BUSY    8
+#define BIT_IDONE   9
+#define BIT_OVAL    10
 
 /* Helper macros */
 #define REG_WR(IDX, DAT)    (*(BASE_ADDR + IDX) = DAT)
@@ -37,3 +38,4 @@ int delete_instance();
 int encrypt_word(Xuint32 *p_pt, Xuint32 *p_ct);
 
 #endif /* SRC_TRIVIUM_HELPERS_H_ */
+

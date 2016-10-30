@@ -14,7 +14,7 @@
 //                   Register map (All values are interpreted as little-endian):
 //                      +0:      Control register (RW)
 //                         -0.0: UNUSED | ... | UNUSED | Process (RWS) | Stop (RWS)| Init (RWS) 
-//                         -0.1: UNUSED | ... | UNUSED | Output valid (R) | Init done (R) | Busy (R)
+//                         -0.1: UNUSED | ... | UNUSED | Ready (R) | Output valid (R)
 //                         -0.2: UNUSED | ... | UNUSED
 //                         -0.3: UNUSED | ... | UNUSED
 //                      +1 to 3: Key register (Least significant bytes at bottom of 1, RW)
@@ -168,9 +168,7 @@ reg                                init_r;          /* Init cipher */
 reg                                stop_r;          /* Stop any calculations and reset the core */
 reg                                proc_r;          /* Start processing */                    
 reg                                gen_output_r;    /* Register stating whether output is being computed */    
-wire                               busy_s;          /* Flag indicating whether core is busy */
-reg                                init_active_r;   /* Flag indicating whether init process is active */
-reg                                init_done_r;     /* Flag indicating whether init process is done */  
+wire                               busy_s;          /* Flag indicating whether core is busy */  
 wire                               slv_reg_rden_r;  /* Signal that triggers the output of data */
 wire                               slv_reg_wren_r;  /* Signal that triggers the capture of input data */
 reg    [C_S_AXI_DATA_WIDTH - 1:0]  reg_data_out;    /* Data being read from registers */
@@ -509,7 +507,7 @@ assign slv_reg_rden_r = axi_arready & S_AXI_ARVALID & ~axi_rvalid;
 always @(*) begin
     /* Address decoding for reading registers */
     case (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB])
-        4'h0:       reg_data_out <= {16'h0000, 5'b00000, gen_output_r & ~busy_s, init_done_r, busy_s, 8'h00};
+        4'h0:       reg_data_out <= {16'h0000, 6'b000000, ~busy_s, gen_output_r & ~busy_s, 8'h00};
         4'h1:       reg_data_out <= reg_key_lo_r;
         4'h2:       reg_data_out <= reg_key_mid_r;
         4'h3:       reg_data_out <= reg_key_hi_r;
@@ -537,22 +535,4 @@ always @(posedge S_AXI_ACLK) begin
     end
 end    
 
-/* 
- * This process monitors the initialization process of
- * the core. 
- */
-always @(posedge S_AXI_ACLK) begin
-    if (S_AXI_ARESETN == 1'b0 || stop_r == 1'b1) begin
-        init_active_r <= 0;
-        init_done_r <= 0; 
-    end
-    else begin
-        if (init_r == 1'b1 && init_done_r == 1'b0 && busy_s == 1'b0)
-            init_active_r <= 1'b1;
-        else if (init_active_r == 1'b1 && busy_s == 1'b0)
-            init_done_r <= 1'b1;
-    end
-end
-
 endmodule
-

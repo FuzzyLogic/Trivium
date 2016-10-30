@@ -6,7 +6,7 @@ int new_instance(Xuint32 *p_key, Xuint32 *p_iv) {
         return XST_FAILURE;
 
     /* Make sure the core is ready */
-    if (0 == REG_GET(REG_CONFIG, BIT_READY))
+    if (1 == REG_GET(REG_CONFIG, BIT_BUSY))
         return XST_FAILURE;
 
     /* Write key to core */
@@ -23,8 +23,7 @@ int new_instance(Xuint32 *p_key, Xuint32 *p_iv) {
     REG_SET(REG_CONFIG, BIT_INIT);
 
     /* Wait until initialization complete */
-    while (1 == REG_GET(REG_CONFIG, BIT_READY));
-    while (0 == REG_GET(REG_CONFIG, BIT_READY));
+    while (0 == REG_GET(REG_CONFIG, BIT_IDONE));
 
     return XST_SUCCESS;
 }
@@ -41,7 +40,7 @@ int encrypt_word(Xuint32 *p_pt, Xuint32 *p_ct) {
         return XST_FAILURE;
 
     /* Make sure the core is ready */
-    if (0 == REG_GET(REG_CONFIG, BIT_READY))
+    if (1 == REG_GET(REG_CONFIG, BIT_BUSY))
         return XST_FAILURE;
 
     /* Write plaintext to core */
@@ -49,7 +48,6 @@ int encrypt_word(Xuint32 *p_pt, Xuint32 *p_ct) {
 
     /* Start computation and wait until output valid */
     REG_SET(REG_CONFIG, BIT_PROC);
-    while (1 == REG_GET(REG_CONFIG, BIT_READY));
     while (0 == REG_GET(REG_CONFIG, BIT_OVAL));
 
     /* Read result into output buffer */
@@ -57,3 +55,4 @@ int encrypt_word(Xuint32 *p_pt, Xuint32 *p_ct) {
 
     return XST_SUCCESS;
 }
+
