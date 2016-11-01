@@ -2,6 +2,7 @@
 #define __AXI_TRIVIUM_H
 
 #include <linux/mutex.h>    /* Mutex declaratino */
+#include <asm/io.h>         /* ioreadX() and iowriteX() functions */ 
 
 /*******************************************************************************
  * Type declarations
@@ -14,6 +15,7 @@ struct axi_trivium_inst {
     unsigned char   *p_pt;      /* Plaintext buffer */
     unsigned char   *p_ct;      /* Ciphertext buffer */
     unsigned int    buf_sz;     /* PT/CT buffer size */ 
+    unsigned int    ct_idx;     /* Index into CT buffer */
 };
 
 /* Information about the IP core */
@@ -61,29 +63,29 @@ static int      encrypt(struct core_info *, struct axi_trivium_inst *);
 /* Inline helper functions */
 static inline void reg_wr(struct core_info *p_ip_info, unsigned long reg, unsigned int dat) {
     if (p_ip_info)
-        *(p_ip_info->p_base_addr + reg) = dat;
+        iowrite32(dat, p_ip_info->p_base_addr + reg);
 }
 
 static inline unsigned int reg_rd(struct core_info *p_ip_info, unsigned long reg) {
     if (p_ip_info)
-        return *(p_ip_info->p_base_addr + reg);
+        return ioread32(p_ip_info->p_base_addr + reg);
 
     return 0;
 }
 
 static inline void reg_set(struct core_info *p_ip_info, unsigned long reg, unsigned char bit_pos) {
     if (p_ip_info)
-        *(p_ip_info->p_base_addr + reg) |= 1 << bit_pos;
+        iowrite32(ioread32(p_ip_info->p_base_addr + reg) | (1 << bit_pos), p_ip_info->p_base_addr + reg);
 }
 
 static inline void reg_unset(struct core_info *p_ip_info, unsigned long reg, unsigned char bit_pos) {
     if (p_ip_info)
-        *(p_ip_info->p_base_addr + reg) &= ~(1 << bit_pos);
+        iowrite32(ioread32(p_ip_info->p_base_addr + reg) & ~(1 << bit_pos), p_ip_info->p_base_addr + reg);
 }
 
 static inline unsigned char reg_get(struct core_info *p_ip_info, unsigned long reg, unsigned char bit_pos) {
     if (p_ip_info)
-        return (*(p_ip_info->p_base_addr + reg) & (1 << bit_pos)) >> bit_pos;
+        return (unsigned char)((ioread32(p_ip_info->p_base_addr + reg) & (1 << bit_pos)) >> bit_pos);
 
     return 0;
 }

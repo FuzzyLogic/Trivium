@@ -175,12 +175,12 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
         if (sz != KEY_LEN)
             return -ENOEXEC;
 
-        p_inst->p_key = (unsigned char *)kzalloc(sz*sizeof(unsigned char), GFP_KERNEL);
+        /* Make sure a multiple of 32 bit is allocated for writing to registers */
+        p_inst->p_key = (unsigned char *)kzalloc((sz/3)*sizeof(unsigned int), GFP_KERNEL);
         if (!p_inst->p_key)
             return -ENOMEM;
 
         /* Copy key data from user buffer to instance */
-        pr_info("Copying key...\n");
         if (copy_from_user(p_inst->p_key, p_buf, sz))
             return -EFAULT;
     } else if (!p_inst->p_iv) {
@@ -188,12 +188,12 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
         if (sz != IV_LEN)
             return -ENOEXEC;
 
-        p_inst->p_iv = (unsigned char *)kzalloc(sz*sizeof(unsigned char), GFP_KERNEL);
+        /* Make sure a multiple of 32 bit is allocated for writing to registers */
+        p_inst->p_iv = (unsigned char *)kzalloc((sz/3)*sizeof(unsigned int), GFP_KERNEL);
         if (!p_inst->p_iv)
             return -ENOMEM;
 
         /* Copy IV from user buffer to instance */
-        pr_info("Copying IV...\n");
         if (copy_from_user(p_inst->p_iv, p_buf, sz))
             return -EFAULT;
     } else {
@@ -201,9 +201,18 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
         if (sz%DAT_LEN_MUL)
             return -ENOEXEC;
 
+        /* Allocate buffers, note that unread CT data will be lost */
         p_inst->p_pt = (unsigned char *)kzalloc(sz*sizeof(unsigned char), GFP_KERNEL);
+
+        if (p_inst->p_ct) {
+            kzfree(p_inst->p_ct);
+            p_inst->p_ct = NULL;
+            p_inst->ct_idx = 0;
+        }
+
         p_inst->p_ct = (unsigned char *)kzalloc(sz*sizeof(unsigned char), GFP_KERNEL);
         p_inst->buf_sz = sz;
+
         if (copy_from_user(p_inst->p_pt, p_buf, sz))
             return -EFAULT;
 
@@ -213,7 +222,6 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
         if (ret_val)
             return ret_val;
 
-        pr_info("Encrypting...\n");
         ret_val = encrypt(&ip_info, p_inst);
         if (ret_val)
             return ret_val;
@@ -221,19 +229,30 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
         /* Free the IP for other processes */
         mutex_unlock(&ip_mtx);
         kzfree(p_inst->p_pt);
+        p_inst->p_pt = NULL;
     }
 
     return sz;
 }
 
 static ssize_t proc_axi_trivium_read(struct file *p_file, char __user *p_buf, size_t sz, loff_t *p_off) {
-    pr_info("proc_axi_trivium_read\n");
+    struct axi_trivium_inst *p_inst = (struct axi_trivium_inst *)p_file->private_data;
 
-    /* Tmp stuff...*/
-    if (copy_to_user(p_buf, ((struct axi_trivium_inst *)p_file->private_data)->p_ct, sz))
+    /* Check if requested read is possible */
+    if (sz > p_inst->buf_sz - p_inst->ct_idx || !p_inst->p_ct)
+        return -ENOEXEC;
+
+    /* Copy requested number of bytes*/
+    if (copy_to_user(p_buf, p_inst->p_ct + p_inst->ct_idx, sz))
         return -EFAULT;
 
-    kzfree(((struct axi_trivium_inst *)p_file->private_data)->p_ct);
+    /* Update index and clear buffer if everything has been read */
+    p_inst->ct_idx += sz;
+    if (p_inst->ct_idx == p_inst->buf_sz) {
+        kzfree(p_inst->p_ct);
+        p_inst->p_ct = NULL;
+        p_inst->ct_idx = 0;
+    }
 
     return sz;
 }
@@ -278,20 +297,9 @@ static int context_swap(struct core_info *p_ip_info, struct axi_trivium_inst *p_
     reg_wr(p_ip_info, REG_IV_MID, *((unsigned int *)(p_new_inst->p_iv) + 1));
     reg_wr(p_ip_info, REG_IV_HI, *((unsigned int *)(p_new_inst->p_iv) + 2));
 
-    //DBG
-    pr_info("REG_KEY_LO: 0x%08x\n", reg_rd(p_ip_info, REG_KEY_LO));
-    pr_info("REG_KEY_MID: 0x%08x\n", reg_rd(p_ip_info, REG_KEY_MID));
-    pr_info("REG_KEY_HI: 0x%08x\n", reg_rd(p_ip_info, REG_KEY_HI));
-
-    pr_info("REG_IV_LO: 0x%08x\n", reg_rd(p_ip_info, REG_IV_LO));
-    pr_info("REG_IV_MID: 0x%08x\n", reg_rd(p_ip_info, REG_IV_MID));
-    pr_info("REG_IV_HI: 0x%08x\n", reg_rd(p_ip_info, REG_IV_HI));
-
     /* Initialize and wait for completion */
     reg_set(p_ip_info, REG_CONFIG, REG_CONFIG_BIT_INIT);
-    pr_info("context: 1\n");
     while (0 == reg_get(p_ip_info, REG_CONFIG, REG_CONFIG_BIT_IDONE));
-    pr_info("context: 2\n");
 
     return 0;
 }
@@ -327,14 +335,9 @@ static int encrypt(struct core_info *p_ip_info, struct axi_trivium_inst *p_inst)
         /* Write plaintext to core */
         reg_wr(p_ip_info, REG_DAT_I, *(((unsigned int *)p_inst->p_pt) + i));
 
-        //DBG
-        pr_info("REG_DAT_I: 0x%08x\n", reg_rd(p_ip_info, REG_DAT_I));
-
         /* Start computation and wait until output valid */
         reg_set(p_ip_info, REG_CONFIG, REG_CONFIG_BIT_PROC);
-        pr_info("enc: 1\n");
         while (0 == reg_get(p_ip_info, REG_CONFIG, REG_CONFIG_BIT_OVAL));
-        pr_info("enc: 2\n");
 
         /* Read result into output buffer */
         *(((unsigned int *)p_inst->p_ct) + i) = reg_rd(p_ip_info, REG_DAT_O);
