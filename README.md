@@ -21,6 +21,9 @@ A Verilog implementation of the Trivium stream cipher
     + The hdl/src directory contains the source code of the core, whereas the testbench can be found in hdl/tb
     + The AXI-related code is located in hdl/ip and can be used to create and package the core
     + Test vectors and the python reference implementation can be found in the reference_implementation/ directory
+    + A Linux driver can be found in sw/linux_driver, along with a simple Linux user-space test in sw/linux_test
+    + Compiling the driver simply requires the Xilinx cross-compilation toolchain and the environment variable KDIR to point to the root of the Linux kernel build tree
+    + The device tree must be updated with a node for the core - The compatible string can be found in the driver source
     + The specification of Trivium can be found in [1]
 	
 # 2. Current Status
@@ -46,8 +49,7 @@ A Verilog implementation of the Trivium stream cipher
           test code found in sw/basic_test
 		
 # 4. TODOs
-    + Add support for Linux integration via device driver (and possibly modifications to the device tree)
-    + Add Linux user-space tests
+    + Currently none
 
 # 5. License
     This project is licensed under the Lesser General Public License (LGPL). See the lincense.txt file in the top
