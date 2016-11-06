@@ -47,6 +47,20 @@ A Verilog implementation of the Trivium stream cipher
         - The testbench is self checking and will abort with a success message if all tests pass
         - Create a simple Zynq design with a single Zynq 7 Processing System core and use the bare-metal 
           test code found in sw/basic_test
+    + Linux Integration and Testing
+        - Source the Xilinx build environment script: 
+          # source /opt/Xilinx/Vivado/2016.2/settings64.sh
+        - Set environment variables:
+          # export ARCH=arm
+          # export CROSS_COMPILE=arm-xilinx-linux-gnueabi-
+          # export KDIR=<PATH_TO_KERNEL_TREE>
+        - Run 'make' to build the driver
+        - Add IP core to your design and map the device to memory
+        - Add a node for the AXI core to the device tree and compile new device tree
+        - In a running Linux system, insert the driver using 'insmod' or 'modprobe':
+          # insmod axi_trivium.ko
+        - Run the Python test script found in sw/linux_test on the device (requires 'Python3')
+        - The IP core can be interfaced via the driver-managed /proc/axi_trivium entry
 		
 # 4. TODOs
     + Currently none
