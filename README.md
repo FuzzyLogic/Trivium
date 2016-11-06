@@ -28,9 +28,11 @@ A Verilog implementation of the Trivium stream cipher
 	
 # 2. Current Status
     The core has successfully been synthesized, placed and routed in a design. In addition, the test coverage of
-    the behavioral simulation is complete, with the core passing all tests. In addition, the core was packaged
+    the behavioral simulation is complete, with the core passing all tests. Also, the core was packaged
     as an AXI IP core and tested in a simple Zynq design. A few bare-metal tests were written which interface
     the core from one of the Cortex A9 cores in the PS. All tests execute successfully.
+    In addition, a Linux device driver was developed for the core. A simple set of randomized tests were used
+    to verify the functionality in a Linux user-space environment running on the ZYBO development board.
     
 # 3. Synthesizing and Testing The Core
     + Synthesis
