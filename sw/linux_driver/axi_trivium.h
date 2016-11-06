@@ -42,25 +42,25 @@ static int      encrypt(struct core_info *, struct axi_trivium_inst *);
  * Global variables and definitions
  ******************************************************************************/
 /* IP core registers */
-#define REG_CONFIG  0
-#define REG_KEY_LO  1
-#define REG_KEY_MID 2
-#define REG_KEY_HI  3
-#define REG_IV_LO   4
-#define REG_IV_MID  5
-#define REG_IV_HI   6
-#define REG_DAT_I   7
-#define REG_DAT_O   8
+#define REG_CONFIG  0   /* Configuration register */
+#define REG_KEY_LO  1   /* Register for lowest 32 bits of key */
+#define REG_KEY_MID 2   /* Register for middle 32 bits of key */
+#define REG_KEY_HI  3   /* Register for highest 16 bits of key */
+#define REG_IV_LO   4   /* Register for lowest 32 bits of IV */
+#define REG_IV_MID  5   /* Register for middle 32 bits of IV */
+#define REG_IV_HI   6   /* Register for highest 16 bits of key */
+#define REG_DAT_I   7   /* Input data register */
+#define REG_DAT_O   8   /* Cipher output data register */
 
 /* Config register bits */
-#define REG_CONFIG_BIT_INIT     0
-#define REG_CONFIG_BIT_STOP     1
-#define REG_CONFIG_BIT_PROC     2
-#define REG_CONFIG_BIT_BUSY     8
-#define REG_CONFIG_BIT_IDONE    9
-#define REG_CONFIG_BIT_OVAL     10
+#define REG_CONFIG_BIT_INIT     0   /* Initialize the core after specifying key and IV */
+#define REG_CONFIG_BIT_STOP     1   /* Stop the core and reset the instance */
+#define REG_CONFIG_BIT_PROC     2   /* Start processing input data */
+#define REG_CONFIG_BIT_BUSY     8   /* Read-only bit indicating wheter core is currently busy */
+#define REG_CONFIG_BIT_IDONE    9   /* Read-only bit indicating whether initialization phase has completed */
+#define REG_CONFIG_BIT_OVAL     10  /* Read-only bit indicateing whether output computation has completed */
 
-/* Inline helper functions */
+/* Inline helper functions to read and write registers */
 static inline void reg_wr(struct core_info *p_ip_info, unsigned long reg, unsigned int dat) {
     if (p_ip_info)
         iowrite32(dat, p_ip_info->p_base_addr + reg);
@@ -96,8 +96,8 @@ static inline unsigned char reg_get(struct core_info *p_ip_info, unsigned long r
 #define IV_LEN          10              /* Number of IV bytes */
 #define DAT_LEN_MUL     4               /* Data on write must be multiple of this number of bytes */
 
-struct core_info        ip_info; 
-struct mutex            ip_mtx;
+struct core_info        ip_info;        /* Global IP core info struct */
+struct mutex            ip_mtx;         /* Global core mutex */
 
 static const struct file_operations proc_fops = {
     .open = proc_axi_trivium_open,

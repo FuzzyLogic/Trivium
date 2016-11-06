@@ -85,12 +85,12 @@ static int axi_trivium_remove(struct platform_device *p_dev) {
 }
 
 /*
- * axi_trivium_shutdown - Function to shut down the device (not used)
+ * axi_trivium_shutdown - Function to shut down the device (simply reset it)
  *
  * @p_dev: Platform device structure derived from device tree
  */
 static void axi_trivium_shutdown(struct platform_device *p_dev) {
-
+    reg_set(&ip_info, REG_CONFIG, REG_CONFIG_BIT_STOP);
 }
 
 /*******************************************************************************
@@ -112,7 +112,6 @@ static int proc_axi_trivium_open(struct inode *p_node, struct file *p_file) {
         return -ENOMEM;
 
     /* Store instance */
-    pr_info("Creating instance...\n");
     p_file->private_data = p_inst;
 
     return 0;
@@ -146,7 +145,6 @@ static int proc_axi_trivium_close(struct inode *p_node, struct file *p_file) {
         kzfree(p_inst);
     }
 
-    pr_info("Removing instance...\n");
     p_file->private_data = NULL;
     return 0;
 }
@@ -235,6 +233,20 @@ static ssize_t proc_axi_trivium_write(struct file *p_file, const char __user *p_
     return sz;
 }
 
+/*
+ * proc_axi_trivium_read - Handler for read operation on /proc entry
+ *
+ * @p_file - File pointer
+ * @p_buf - Output buffer to user-space
+ * @sz - Number of bytes to read
+ * @p_off - Pointer to an offset value into the file (not used here)
+ *
+ * Return 0 if successful, error code otherwise
+ *
+ * Additional information:
+ *  - Keep track of number of bytes read from CT buffer
+ *  - Free the buffer once everything has been read
+ */
 static ssize_t proc_axi_trivium_read(struct file *p_file, char __user *p_buf, size_t sz, loff_t *p_off) {
     struct axi_trivium_inst *p_inst = (struct axi_trivium_inst *)p_file->private_data;
 
